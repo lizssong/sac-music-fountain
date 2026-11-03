@@ -5,8 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#07060c">
 <meta name="description" content="예술의전당 음악광장을 걸으며 음악에 맞춰 춤추는 분수쇼를 보는 웹 체험">
+<link rel="canonical" href="https://lizssong.github.io/sac-music-fountain/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="쏭리즈 · 크리메타쏭">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://lizssong.github.io/sac-music-fountain/">
 <meta property="og:title" content="예술의전당 세계음악분수">
-<meta property="og:description" content="음악광장을 걸으며 분수쇼를 함께 봐요">
+<meta property="og:description" content="음악광장을 걸으며 음악에 맞춰 춤추는 분수쇼를 함께 봐요. 한낮·노을·야경으로 바뀌는 4곡의 공연.">
+<meta property="og:image" content="https://lizssong.github.io/sac-music-fountain/og.jpg">
+<meta property="og:image:secure_url" content="https://lizssong.github.io/sac-music-fountain/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="밤의 예술의전당 오페라하우스 앞에서 분수쇼를 보는 동글동글한 관람객들">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="예술의전당 세계음악분수">
+<meta name="twitter:description" content="음악광장을 걸으며 분수쇼를 함께 봐요">
+<meta name="twitter:image" content="https://lizssong.github.io/sac-music-fountain/og.jpg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -244,6 +259,9 @@ button{font:inherit;color:inherit;cursor:pointer}
     <button class="icon-btn" id="btn-mute" type="button" aria-pressed="false" aria-label="소리 끄기">
       <svg id="ico-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>
     </button>
+    <button class="icon-btn" id="btn-share" type="button" aria-label="공유하기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="M8.2 10.8l7.6-4.1M8.2 13.2l7.6 4.1"/></svg>
+    </button>
     <button class="icon-btn" id="btn-shot" type="button" aria-label="이 순간 담기">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg>
     </button>
@@ -349,6 +367,8 @@ button{font:inherit;color:inherit;cursor:pointer}
   </ol>
   <h3>음악과 저작권</h3>
   <p class="note">음악은 저작권 보호기간이 끝난 클래식 선율(파헬벨·베토벤·요한 슈트라우스 2세)과 창작곡을 브라우저에서 직접 합성해 연주해요. 음원 파일을 쓰지 않아요.</p>
+  <h3>공개 주소</h3>
+  <p>누구나 열 수 있는 주소예요. 휴대폰에서 열고 "홈 화면에 추가"를 누르면 앱처럼 쓸 수 있어요.<br><a class="link" href="https://lizssong.github.io/sac-music-fountain/" target="_blank" rel="noopener">lizssong.github.io/sac-music-fountain</a></p>
   <p>실제 공연 시간과 신청곡은 <a class="link" href="https://www.sac.or.kr/site/main/pzfountain/pzfountain" target="_blank" rel="noopener">예술의전당 세계음악분수 공식 페이지</a>에서 확인하세요.</p>
 </div>
 
@@ -1813,6 +1833,16 @@ $("#btn-mute").addEventListener("click", () => {
   muted = !muted; if (master && ac) master.gain.setTargetAtTime(muted ? 0 : MASTER_VOL, ac.currentTime, .05);
   const b = $("#btn-mute"); b.setAttribute("aria-pressed", String(muted)); b.setAttribute("aria-label", muted ? "소리 켜기" : "소리 끄기");
   $("#ico-vol").innerHTML = muted ? '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/>' : '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/>';
+});
+const PUBLIC_URL = "https://lizssong.github.io/sac-music-fountain/";
+$("#btn-share").addEventListener("click", async () => {
+  // inside claude.ai the page runs in a frame, so share the public address instead of the frame's own URL
+  const inFrame = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+  const url = inFrame || location.protocol === "file:" ? PUBLIC_URL : location.href.split("#")[0];
+  const data = { title: "예술의전당 세계음악분수", text: "음악광장을 걸으며 분수쇼를 함께 봐요", url };
+  try { if (navigator.share && !inFrame) { await navigator.share(data); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+  try { await navigator.clipboard.writeText(url); toast("주소를 복사했어요. 카톡·스레드에 붙여 넣으세요"); }
+  catch (e) { toast(url); }
 });
 $("#btn-shot").addEventListener("click", () => {
   try {
