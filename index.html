@@ -1681,7 +1681,9 @@ function renderPeople(){
   }
   note.hidden = roomState !== "solo" && roomState !== "public";
   if (roomState === "public") note.textContent = relayStatus === "live"
-    ? "같은 주소로 들어온 사람이 실시간으로 보여요. 위치·색·별명만 공개 중계 서버를 거쳐 전달되고, 이름이나 계정 정보는 보내지 않아요."
+    ? (room && room.kind === "plaza"
+        ? "같은 주소로 들어온 사람이 실시간으로 보여요. 위치·색·별명만 세계음악분수 전용 광장 서버로 전달되고, 이름이나 계정 정보는 보내지 않아요."
+        : "같은 주소로 들어온 사람이 실시간으로 보여요. 위치·색·별명만 공개 중계 서버를 거쳐 전달되고, 이름이나 계정 정보는 보내지 않아요.")
     : (relayStatus === "reconnecting" ? "중계 서버에 다시 연결하는 중이에요. 잠시 후 다른 관람객이 다시 보여요." : "중계 서버에 연결하는 중이에요.");
   else note.textContent = "이 화면에서는 다른 관람객과 연결되지 않았어요. 공유받은 사람이 로그인한 상태로 열면 함께 보여요.";
 }
@@ -1797,6 +1799,54 @@ function setNick(raw, chosen){
     if (setNick(b.value, true)) { b.blur(); toast("이름을 " + myNick + "(으)로 바꿨어요"); }
   });
 })();
+/* ---------- Dedicated plaza server (Cloudflare) ----------
+   Preferred on the public address once deployed; the public MQTT relay stays as a fallback. */
+const PLAZA_URL = (() => { try { const q = new URLSearchParams(location.search).get("plaza"); if (q && /^wss?:\/\//.test(q)) return q; } catch (e) {} return "__PLAZA_URL__"; })();
+function makePlazaRoom(base){
+  return new Promise((resolve, reject) => {
+    const others = new Map(), peerFns = [], evFns = {};
+    let ws = null, myId = "local", mine = {}, connected = false, first = true, retry = 0, notifyQueued = false;
+    const list = () => [{ peer: myId, by: null, isMe: true, sameTab: true, kind: "viewer", guest: false, presence: mine }]
+      .concat([...others].map(([id, p]) => ({ peer: id, by: null, isMe: false, sameTab: false, kind: "viewer", guest: false, presence: p })));
+    const notify = () => { if (notifyQueued) return; notifyQueued = true; requestAnimationFrame(() => { notifyQueued = false; const l = list(); for (const f of peerFns) { try { f({ peers: l }); } catch (e) {} } }); };
+    const send = o => { if (connected) { try { ws.send(JSON.stringify(o)); } catch (e) {} } };
+    const open = () => {
+      const room = (location.hash.replace(/^#/, "") || "plaza").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 32) || "plaza";
+      ws = new WebSocket(base.replace(/\/$/, "") + "/ws?room=" + encodeURIComponent(room));
+      const timer = setTimeout(() => { if (!connected) { try { ws.close(); } catch (e) {} } }, 8000);
+      ws.onmessage = ev => {
+        let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+        if (m.t === "hello") {
+          clearTimeout(timer); connected = true; retry = 0; myId = m.id; others.clear();
+          for (const q of m.peers || []) if (q && q.id && q.p) others.set(q.id, q.p);
+          if (mine.x != null) send({ t: "p", p: mine });
+          setRelayStatus("live"); notify();
+          if (first) { first = false; resolve(api); }
+        } else if (m.t === "p" && m.id && m.p) { others.set(m.id, m.p); notify(); }
+        else if (m.t === "x" && m.id) { if (others.delete(m.id)) notify(); }
+        else if (m.t === "e" && m.id && evFns[m.k]) { for (const f of evFns[m.k]) { try { f({ peer: m.id, by: null, isMe: false, sameTab: false, kind: "viewer", guest: false, topic: m.k, data: m.d }); } catch (e) {} } }
+      };
+      ws.onclose = () => {
+        clearTimeout(timer); const was = connected; connected = false;
+        if (first) { first = false; reject(new Error("plaza unreachable")); return; }
+        if (was) { others.clear(); notify(); setRelayStatus("reconnecting"); }
+        setTimeout(open, Math.min(15000, 1000 * 2 ** retry++));
+      };
+      ws.onerror = () => {};
+    };
+    setInterval(() => send({ t: "ping" }), 25000);
+    addEventListener("pagehide", () => { try { ws.close(); } catch (e) {} });
+    const api = {
+      minInterval: 120, kind: "plaza",
+      presence(patch){ for (const k in patch) { if (patch[k] === null) delete mine[k]; else mine[k] = patch[k]; } send({ t: "p", p: mine }); return Promise.resolve(); },
+      emit(topic, data){ send({ t: "e", k: topic, d: data }); return Promise.resolve(); },
+      on(topic, fn){ (evFns[topic] = evFns[topic] || []).push(fn); return () => {}; },
+      onPeers(fn){ peerFns.push(fn); notify(); return () => {}; },
+      connected: () => connected
+    };
+    open();
+  });
+}
 let relayStatus = "";
 function setRelayStatus(s){ relayStatus = s; renderPeople(); }
 (async () => {
@@ -1804,7 +1854,11 @@ function setRelayStatus(s){ relayStatus = s; renderPeople(); }
     // open web address: meet other visitors through the public relay
     if (location.protocol === "file:") { roomState = "solo"; renderPeople(); return; }
     try {
-      room = await makePublicRoom(); roomState = "public";
+      try {
+        if (!/^wss?:\/\//.test(PLAZA_URL)) throw new Error("no plaza server set");
+        room = await makePlazaRoom(PLAZA_URL);
+      } catch (e) { room = await makePublicRoom(); }
+      roomState = "public";
       room.onPeers(ch => syncPeers(ch.peers));
       room.on("wish", onRemoteWish); room.on("cheer", onRemoteCheer);
       pushPresence(true); renderPeople();
