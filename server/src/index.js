@@ -4,6 +4,7 @@
 
 const MAX_PEOPLE = 80;
 const MAX_MSG = 600;
+const EMOTES = ["wave", "heart", "clap", "laugh", "wow", "party", "cry"];
 
 export default {
   async fetch(req, env) {
@@ -72,10 +73,15 @@ export class Plaza {
       const p = sanitize(m.p); if (!p) return;
       a.p = p; ws.serializeAttachment(a);
       this.broadcast({ t: "p", id: a.id, p }, ws);
-    } else if (m.t === "e" && (m.k === "wish" || m.k === "cheer")) {
+    } else if (m.t === "e" && ["wish", "cheer", "emote", "chat"].includes(m.k)) {
       ws.serializeAttachment(a);
-      const d = m.k === "wish" ? { x: num(m.d && m.d.x), z: num(m.d && m.d.z) } : {};
-      if (m.k === "wish" && (d.x === null || d.z === null)) return;
+      let d = {};
+      if (m.k === "wish") { d = { x: num(m.d && m.d.x), z: num(m.d && m.d.z) }; if (d.x === null || d.z === null) return; }
+      else if (m.k === "emote") { const k = m.d && m.d.k; if (!EMOTES.includes(k)) return; d = { k }; }
+      else if (m.k === "chat") {
+        const msg = typeof (m.d && m.d.m) === "string" ? m.d.m.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60) : "";
+        if (!msg || now - (a.lc || 0) < 800) return; a.lc = now; ws.serializeAttachment(a); d = { m: msg };
+      }
       this.broadcast({ t: "e", id: a.id, k: m.k, d }, ws);
     } else if (m.t === "ping") {
       ws.serializeAttachment(a);

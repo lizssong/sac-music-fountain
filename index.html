@@ -231,8 +231,39 @@ button{font:inherit;color:inherit;cursor:pointer}
 .go-live:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
 .hint-short{display:none}
 @media (max-width:520px){.hint-long{display:none}.hint-short{display:inline}}
-.chip.cheer{border-color:var(--line-strong)}
-.chip.cheer .heart{color:var(--rose);font-size:14px;line-height:1}
+.emotes{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;margin-inline:-4px;padding-inline:4px}
+.emotes::-webkit-scrollbar{display:none}
+.emo{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  display:grid;place-items:center;font-size:21px;line-height:1;transition:transform .16s var(--ease-in),border-color .16s,background-color .16s}
+.emo:hover{transform:translateY(-2px);border-color:var(--line-strong)}
+.emo:active{transform:scale(.88)}
+.emo:focus-visible,.chat-open:focus-visible,.chat-send:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
+.chat-open{flex:none;height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--rose);background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  color:var(--ink);font-weight:600;display:flex;align-items:center;gap:8px;transition:transform .16s var(--ease-in),background-color .16s}
+.chat-open svg{width:16px;height:16px;color:var(--rose)}
+.chat-open:hover{transform:translateY(-1px);background:rgba(255,125,156,.16)}
+.chat-open:active{transform:scale(.95)}
+.chat-open[aria-expanded="true"]{background:var(--rose);color:var(--night)}
+.chat-open[aria-expanded="true"] svg{color:var(--night)}
+.chat-row{display:flex;gap:8px}
+.chat-input{flex:1;min-width:0;height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line-strong);background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  color:var(--ink);font:inherit;font-size:16px;transition:border-color .16s}
+.chat-input::placeholder{color:var(--ink-dim)}
+.chat-input:focus{outline:none;border-color:var(--rose)}
+.chat-send{height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--rose);color:var(--night);font-weight:600;transition:background-color .16s,transform .16s}
+.chat-send:hover{background:var(--pearl)}
+.chat-send:active{transform:scale(.95)}
+.chat-log{position:fixed;z-index:4;left:max(16px,env(safe-area-inset-left,0px));top:calc(88px + env(safe-area-inset-top,0px));max-width:min(340px,calc(100vw - 32px));
+  display:grid;gap:4px;pointer-events:none}
+.chat-line{justify-self:start;max-width:100%;padding:6px 12px;border-radius:14px;background:rgba(7,6,12,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  font-size:13px;line-height:1.45;color:var(--ink);overflow-wrap:anywhere;animation:chatIn .3s var(--ease-in) both;transition:opacity .4s var(--ease-out)}
+.chat-line b{font-weight:600;margin-right:6px}
+.chat-line.fade{opacity:0}
+@keyframes chatIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.toggle-row{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--ink-dim)}
+.toggle-row input{width:18px;height:18px;accent-color:var(--rose)}
+@media (max-width:520px){body.chatting .dock .chips,body.chatting .dock .hint,body.chatting .progress{display:none}}
+@media (max-width:420px){.chat-log{top:calc(72px + env(safe-area-inset-top,0px))}.emo{width:40px;height:40px;font-size:19px}}
 .people{list-style:none;margin:0;padding:0;display:grid;gap:0}
 .people li{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--line);min-width:0}
 .people li:last-child{border-bottom:1px solid var(--line)}
@@ -321,9 +352,22 @@ button{font:inherit;color:inherit;cursor:pointer}
         <div class="prog-row"><span class="section" id="np-section">안개분수 · 산맥분수</span><span id="np-time">00:00 / 01:42</span></div>
       </div>
     </div>
+    <form class="chat-row" id="chat-form" autocomplete="off" hidden>
+      <input class="chat-input" id="chat-input" type="text" maxlength="60" enterkeyhint="send" placeholder="친구에게 한마디 (60자)" aria-label="대화 입력">
+      <button class="chat-send" type="submit">보내기</button>
+    </form>
+    <div class="emotes" role="group" aria-label="감정 표현">
+      <button class="chat-open" id="chat-open" type="button" aria-expanded="false" aria-controls="chat-form"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>대화</button>
+      <button class="emo" type="button" data-emo="wave" aria-label="손 흔들기">👋</button>
+      <button class="emo" type="button" data-emo="heart" aria-label="하트">❤️</button>
+      <button class="emo" type="button" data-emo="clap" aria-label="박수">👏</button>
+      <button class="emo" type="button" data-emo="laugh" aria-label="웃음">😆</button>
+      <button class="emo" type="button" data-emo="wow" aria-label="놀람">😮</button>
+      <button class="emo" type="button" data-emo="party" aria-label="축하">🎉</button>
+      <button class="emo" type="button" data-emo="cry" aria-label="감동">🥹</button>
+    </div>
     <div class="chips" role="group" aria-label="분수 직접 쏘기">
       <button class="chip hero" type="button" data-g="main">주분수 쏘기</button>
-      <button class="chip cheer" type="button" id="btn-cheer"><span class="heart" aria-hidden="true">♥</span>박수 보내기</button>
       <button class="chip" type="button" data-g="mountain"><span class="c-dot"></span>산맥분수</button>
       <button class="chip" type="button" data-g="gat"><span class="c-dot"></span>갓분수</button>
       <button class="chip" type="button" data-g="orchid"><span class="c-dot"></span>난초분수</button>
@@ -371,6 +415,7 @@ button{font:inherit;color:inherit;cursor:pointer}
     <input class="name-input" id="nick-sheet" type="text" maxlength="12" enterkeyhint="done" aria-label="내 이름" placeholder="이름을 적어 주세요">
     <button class="save-btn" type="submit">바꾸기</button>
   </form>
+  <label class="toggle-row"><input type="checkbox" id="chat-hide"> 다른 사람 대화 숨기기</label>
   <h3>지금 함께 보는 사람 · <span id="people-n">1</span>명</h3>
   <ul class="people" id="people"></ul>
   <p class="people-empty" id="people-note" hidden></p>
@@ -416,6 +461,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 </div>
 
 <div class="scene-tag" id="scene-tag" aria-live="polite"><span class="st-k" id="st-k">Time of day</span><span class="st-n" id="st-n">야경</span><span class="st-s" id="st-s"></span></div>
+<div class="chat-log" id="chat-log" aria-live="polite"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -1371,8 +1417,8 @@ function drawAudience(t, avg){
   }
   const figs = [];
   for (const a of audience) { const d = depthOf(a.x, a.z); a.alpha = Math.max(0, Math.min(1, (d - 6.5) / 4)); figs.push({ p: a, kind: "amb", d }); }
-  for (const v of peerMap.values()) figs.push({ p: { x: v.dx, z: v.dz, phase: v.phase, mv: v.mv, sx: v.sx, hx: v.hx, hz: v.hz, st: v.st }, kind: "peer", v, d: depthOf(v.dx, v.dz) });
-  figs.push({ p: { x: me.x, z: me.z, phase: me.phase, mv: me.mv, sx: me.sx, hx: me.hx, hz: me.hz, st: me.st }, kind: "me", d: depthOf(me.x, me.z) });
+  for (const v of peerMap.values()) figs.push({ p: { x: v.dx, z: v.dz, phase: v.phase, mv: v.mv, sx: v.sx, hx: v.hx, hz: v.hz, st: v.st, emo: v.emo, say: v.say }, kind: "peer", v, d: depthOf(v.dx, v.dz) });
+  figs.push({ p: { x: me.x, z: me.z, phase: me.phase, mv: me.mv, sx: me.sx, hx: me.hx, hz: me.hz, st: me.st, emo: me.emo, say: me.say }, kind: "me", d: depthOf(me.x, me.z) });
   figs.sort((a, b) => b.d - a.d);
   for (const f of figs) {
     if (f.kind === "amb") drawFigure(f.p, t, avg, null, null);
@@ -1424,7 +1470,9 @@ function drawFigure(p, t, avg, col, label){
   const cfl = Math.hypot(cam.fx, cam.fz) || 1;
   const facing = -(hx * cam.fx + hz * cam.fz) / cfl, side = hx * cam.rx + hz * cam.rz;
   const front = facing > -.2;
-  const bob = Math.abs(sn) * .07 * s * mv;
+  const eNow = performance.now(), emo = p.emo && eNow - p.emo.t < 2200 ? p.emo : null, eAge = emo ? (eNow - emo.t) / 1000 : 0;
+  const hop = emo && (emo.k === "party" || emo.k === "laugh") ? Math.abs(Math.sin(eAge * 9)) * .16 * s * Math.max(0, 1 - eAge / 2) : 0;
+  const bob = Math.abs(sn) * .07 * s * mv + hop;
   const breathe = 1 + Math.sin(t * 2.2 + st.seed) * .012 * (1 - mv);
   // ground shadow (+ colour ring for real people)
   ctx.save(); ctx.translate(gx, gy); ctx.scale(1, .3);
@@ -1449,6 +1497,13 @@ function drawFigure(p, t, avg, col, label){
     let ang = k * .35 + sn * .55 * mv * k;
     let ax = gx + k * .33 * s, ay = by - .06 * s;
     if (phoneUp && k === 1 && front) { ang = -1.9; }
+    if (emo) {
+      if (emo.k === "wave" && k === 1) ang = -2.5 + Math.sin(eAge * 14) * .45;
+      else if (emo.k === "clap") ang = k * (-.95 + Math.abs(Math.sin(eAge * 13)) * .45);
+      else if (emo.k === "party" || emo.k === "wow") ang = k * -2.6 + Math.sin(eAge * 10) * .15;
+      else if (emo.k === "heart") ang = k * -1.25;
+      else if (emo.k === "cry" && front) ang = k * -2.1;
+    }
     ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang);
     blob(0, .16 * s, .085 * s, .17 * s, st.top);
     blob(0, .31 * s, .075 * s, .07 * s, st.skin);
@@ -1513,18 +1568,55 @@ function drawFigure(p, t, avg, col, label){
     ctx.fillStyle = "#1c1a22"; roundRect(px - .06 * s, py - .1 * s, .12 * s, .2 * s, .03 * s); ctx.fill();
     ctx.fillStyle = "rgba(255,244,238,.9)"; roundRect(px - .045 * s, py - .085 * s, .09 * s, .17 * s, .02 * s); ctx.fill();
   }
+  // emote floating above the head
+  let tagTop = hy - hr * 1.25 - (st.acc === "bunny" ? .3 * s : 0);
+  if (emo) {
+    const fsE = Math.max(18 * DPR, Math.min(44 * DPR, .55 * s)), rise = eAge * .35 * s, a = Math.min(1, 3 * (1 - eAge / 2.2));
+    ctx.globalAlpha = A * Math.max(0, a); ctx.font = `${fsE}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(EMO_CHAR[emo.k] || "✨", gx + Math.sin(eAge * 5) * .05 * s, tagTop - .55 * s - rise);
+    ctx.globalAlpha = A; ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
+  }
   // name tag
   if (col && label) {
     const fs = Math.max(11 * DPR, Math.min(15 * DPR, .2 * s));
     ctx.font = `600 ${fs}px "IBM Plex Sans KR", sans-serif`;
     const text = label.length > 12 ? label.slice(0, 11) + "…" : label;
-    const tw = ctx.measureText(text).width, padX = fs * .6, th = fs * 1.6, tyTop = hy - hr * 1.25 - th - (st.acc === "bunny" ? .3 * s : 0);
+    const tw = ctx.measureText(text).width, padX = fs * .6, th = fs * 1.6, tyTop = tagTop - th;
     ctx.fillStyle = "rgba(7,6,12,.72)"; roundRect(gx - tw / 2 - padX, tyTop, tw + padX * 2, th, th / 2); ctx.fill();
     ctx.strokeStyle = col; ctx.lineWidth = 1.5 * DPR; ctx.stroke();
     ctx.fillStyle = "#f5efe7"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, gx, tyTop + th / 2 + DPR * .5);
     ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
+    // speech bubble
+    const say = p.say && eNow - p.say.t < 7000 ? p.say : null;
+    if (say) {
+      const bf = Math.max(12 * DPR, Math.min(16 * DPR, .22 * s));
+      ctx.font = `500 ${bf}px "IBM Plex Sans KR", sans-serif`;
+      const maxW = Math.max(120 * DPR, Math.min(240 * DPR, 3.6 * s));
+      const lines = wrapText(say.m, maxW).slice(0, 3);
+      const lw = Math.max(...lines.map(l => ctx.measureText(l).width)), lh = bf * 1.35, bp = bf * .7;
+      const bw = lw + bp * 2, bh = lines.length * lh + bp * 1.2, bx0 = gx - bw / 2, by1 = tyTop - bf * .9, by0 = by1 - bh;
+      const fade = Math.min(1, (7000 - (eNow - say.t)) / 600);
+      ctx.globalAlpha = A * fade;
+      ctx.fillStyle = "rgba(255,250,246,.96)"; roundRect(bx0, by0, bw, bh, Math.min(bh / 2, bf * 1.1)); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(gx - bf * .45, by1 - 1); ctx.lineTo(gx, by1 + bf * .55); ctx.lineTo(gx + bf * .45, by1 - 1); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5 * DPR; roundRect(bx0, by0, bw, bh, Math.min(bh / 2, bf * 1.1)); ctx.stroke();
+      ctx.fillStyle = "#231a24"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      lines.forEach((l, i) => ctx.fillText(l, gx, by0 + bp * .6 + lh * (i + .5)));
+      ctx.textAlign = "start"; ctx.textBaseline = "alphabetic"; ctx.globalAlpha = A;
+    }
   }
   ctx.restore();
+}
+function wrapText(text, maxW){
+  const out = []; let line = "";
+  for (const ch of String(text)) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxW && line) { out.push(line); line = ch.trim() ? ch : ""; } else line = test;
+  }
+  if (line) out.push(line);
+  if (out.length > 3) out[2] = out[2].slice(0, -1) + "…";
+  return out;
 }
 function roundRect(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 const hearts = [];
@@ -1698,6 +1790,35 @@ function onRemoteWish(m){
   wishes.push({ x, z, t: 0, acc: 0 }); ripples.push({ x, z, r: .2, a: .9 });
   if (wishes.length > 12) wishes.shift();
 }
+const EMO_CHAR = { wave: "👋", heart: "❤️", clap: "👏", laugh: "😆", wow: "😮", party: "🎉", cry: "🥹" };
+const cleanChat = s => typeof s === "string" ? s.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60) : "";
+let chatHidden = false;
+try { chatHidden = localStorage.getItem("sac-fountain-chat-hide") === "1"; } catch (e) {}
+function doEmote(target, k){
+  target.emo = { k, t: performance.now() };
+  if (k === "heart" || k === "cry") addHearts(target === me ? me.x : target.dx, target === me ? me.z : target.dz, target === me ? myColor : target.col);
+}
+function addChatLine(name, col, msg){
+  const box = document.getElementById("chat-log"); if (!box) return;
+  const el = document.createElement("div"); el.className = "chat-line";
+  const b = document.createElement("b"); b.style.color = col; b.textContent = name;
+  el.append(b, document.createTextNode(msg)); box.appendChild(el);
+  while (box.children.length > 4) box.firstChild.remove();
+  setTimeout(() => el.classList.add("fade"), 9000); setTimeout(() => el.remove(), 9500);
+}
+function onRemoteEmote(m){
+  if (m.sameTab) return;
+  const v = peerMap.get(m.peer), k = m.data && m.data.k, now = performance.now();
+  if (!v || !EMO_CHAR[k] || now - (v.lastEmo || 0) < 300) return;
+  v.lastEmo = now; doEmote(v, k);
+}
+function onRemoteChat(m){
+  if (m.sameTab || chatHidden) return;
+  const v = peerMap.get(m.peer), msg = cleanChat(m.data && m.data.m), now = performance.now();
+  if (!v || !msg || now - (v.lastChat || 0) < 900) return;
+  v.lastChat = now; v.say = { m: msg, t: now };
+  addChatLine(v.name || "관람객", v.col, msg);
+}
 function onRemoteCheer(m){
   if (m.sameTab) return;
   const v = peerMap.get(m.peer), now = performance.now();
@@ -1860,7 +1981,7 @@ function setRelayStatus(s){ relayStatus = s; renderPeople(); }
       } catch (e) { room = await makePublicRoom(); }
       roomState = "public";
       room.onPeers(ch => syncPeers(ch.peers));
-      room.on("wish", onRemoteWish); room.on("cheer", onRemoteCheer);
+      room.on("wish", onRemoteWish); room.on("cheer", onRemoteCheer); room.on("emote", onRemoteEmote); room.on("chat", onRemoteChat);
       pushPresence(true); renderPeople();
     } catch (e) { room = null; roomState = "solo"; renderPeople(); }
     return;
@@ -1876,6 +1997,8 @@ function setRelayStatus(s){ relayStatus = s; renderPeople(); }
   room.onPeers(ch => syncPeers(ch.peers), fail);
   room.on("wish", onRemoteWish, () => {});
   room.on("cheer", onRemoteCheer, () => {});
+  room.on("emote", onRemoteEmote, () => {});
+  room.on("chat", onRemoteChat, () => {});
   pushPresence(true);
   renderPeople();
 })();
@@ -2022,11 +2145,28 @@ $("#btn-play").addEventListener("click", () => { unlockAudio(); togglePlay(); })
 $("#btn-next").addEventListener("click", () => { player.live = false; startTrack(player.idx + 1, 0); });
 $("#btn-prev").addEventListener("click", () => { player.live = false; startTrack(curBeat() > 8 ? player.idx : player.idx - 1, 0); });
 $("#btn-golive").addEventListener("click", () => { joinLive(); toast("LIVE 공연에 다시 합류했어요"); });
-$("#btn-cheer").addEventListener("click", () => {
-  const now = performance.now(); if (now - lastMyCheer < 350) return; lastMyCheer = now;
-  addHearts(me.x, me.z, myColor);
-  if (room) room.emit("cheer", {}).catch(() => {});
+document.querySelectorAll(".emo").forEach(btn => btn.addEventListener("click", () => {
+  const now = performance.now(); if (now - lastMyCheer < 300) return; lastMyCheer = now;
+  const k = btn.dataset.emo; doEmote(me, k);
+  if (room) room.emit("emote", { k }).catch(() => {});
+}));
+let lastMyChat = 0;
+$("#chat-open").addEventListener("click", () => {
+  const f = $("#chat-form"), open = f.hidden;
+  f.hidden = !open; $("#chat-open").setAttribute("aria-expanded", String(open)); document.body.classList.toggle("chatting", open);
+  if (open) $("#chat-input").focus();
 });
+$("#chat-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const inp = $("#chat-input"), msg = cleanChat(inp.value);
+  if (!msg) return;
+  const now = performance.now(); if (now - lastMyChat < 1000) { toast("조금 천천히 보내 주세요"); return; }
+  lastMyChat = now; inp.value = "";
+  me.say = { m: msg, t: now }; addChatLine("나", myColor, msg);
+  if (room) room.emit("chat", { m: msg }).catch(() => {}); else toast("지금은 혼자 있어서 나만 볼 수 있어요");
+});
+$("#chat-hide").checked = chatHidden;
+$("#chat-hide").addEventListener("change", e => { chatHidden = e.target.checked; try { localStorage.setItem("sac-fountain-chat-hide", chatHidden ? "1" : "0"); } catch (err) {} });
 $("#btn-mute").addEventListener("click", () => {
   unlockAudio();
   muted = !muted; if (master && ac) master.gain.setTargetAtTime(muted ? 0 : MASTER_VOL, ac.currentTime, .05);
@@ -2069,6 +2209,7 @@ $("#btn-enter").addEventListener("click", () => {
 addEventListener("keydown", e => {
   if (e.key === "Escape") { closeSheet(); return; }
   if (openSheetEl || !$("#intro").hidden) return;
+  if (e.target && e.target.closest && e.target.closest("input, textarea")) return;
   if (e.target && e.target.closest && e.target.closest("button") && e.code === "Space") return;
   if (e.code === "Space") { e.preventDefault(); togglePlay(); }
   else if (/^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(e.code)) { e.preventDefault(); keys.add(e.code); }
