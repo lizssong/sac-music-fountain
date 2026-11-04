@@ -139,6 +139,25 @@ button{font:inherit;color:inherit;cursor:pointer}
 .intro h1 span{display:block;font-size:.32em;letter-spacing:.02em;color:var(--ink-dim);font-weight:700;margin-bottom:12px}
 .intro p{margin:0;max-width:34ch;color:var(--ink-dim);font-size:15px;line-height:1.7;text-wrap:balance}
 .intro p b{color:var(--ink);font-weight:600}
+.name-field{display:grid;gap:8px;justify-items:center;width:min(320px,100%)}
+.name-field label{font-family:var(--f-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim)}
+.name-row{display:flex;gap:8px;width:100%}
+.name-input{flex:1;min-width:0;height:48px;padding:0 16px;border-radius:999px;border:1px solid var(--line-strong);background:rgba(15,11,24,.72);color:var(--ink);
+  font:inherit;font-size:16px;font-weight:600;text-align:center;transition:border-color .16s,background-color .16s}
+.name-input::placeholder{color:var(--ink-dim);font-weight:400}
+.name-input:hover{border-color:var(--ink-dim)}
+.name-input:focus{outline:none;border-color:var(--rose);background:rgba(15,11,24,.9)}
+.dice{width:48px;height:48px;flex:none;border-radius:50%;border:1px solid var(--line-strong);background:rgba(15,11,24,.72);display:grid;place-items:center;transition:transform .16s var(--ease-in),border-color .16s}
+.dice:hover{border-color:var(--ink-dim);transform:rotate(-12deg)}
+.dice:active{transform:scale(.92)}
+.dice:focus-visible{outline:2px solid var(--rose);outline-offset:3px}
+.dice svg{width:20px;height:20px}
+.sheet .name-row{max-width:360px;margin-bottom:8px}
+.sheet .name-input{height:44px;text-align:left}
+.save-btn{height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--rose);color:var(--night);font-weight:600;transition:background-color .16s,transform .16s}
+.save-btn:hover{background:var(--pearl)}
+.save-btn:active{transform:scale(.96)}
+.save-btn:focus-visible{outline:2px solid var(--pearl);outline-offset:3px}
 .enter{height:56px;padding:0 32px;border-radius:999px;border:0;background:var(--rose);color:var(--night);font-size:16px;font-weight:600;letter-spacing:.02em;
   display:inline-flex;align-items:center;gap:12px;box-shadow:0 8px 40px rgba(255,125,156,.35);transition:transform .18s var(--ease-in),background-color .18s,box-shadow .18s}
 .enter:hover{transform:translateY(-2px);background:var(--pearl);box-shadow:0 12px 48px rgba(255,243,234,.3)}
@@ -323,6 +342,13 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div class="programme" aria-label="오늘의 선곡">
       <span>카논 D장조</span><span>환희의 송가</span><span>아름답고 푸른 도나우</span><span>우면산 달빛</span>
     </div>
+    <div class="name-field">
+      <label for="nick-intro">광장에서 쓸 이름</label>
+      <div class="name-row">
+        <input class="name-input" id="nick-intro" type="text" maxlength="12" autocomplete="nickname" enterkeyhint="go" placeholder="이름을 적어 주세요">
+        <button class="dice" id="nick-dice" type="button" aria-label="이름 새로 뽑기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="15" cy="9" r="1.2" fill="currentColor"/><circle cx="9" cy="15" r="1.2" fill="currentColor"/></svg></button>
+      </div>
+    </div>
     <button class="enter" id="btn-enter" type="button">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15L20 12z"/></svg>
       눌러서 입장하기
@@ -340,6 +366,11 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
   <p>공연은 정해진 시간표대로 흘러서, 지금 접속한 사람 모두가 같은 곡의 같은 장면을 함께 봐요.</p>
   <ul class="setlist" id="setlist"></ul>
+  <h3>내 이름</h3>
+  <form class="name-row" id="nick-form" autocomplete="off">
+    <input class="name-input" id="nick-sheet" type="text" maxlength="12" enterkeyhint="done" aria-label="내 이름" placeholder="이름을 적어 주세요">
+    <button class="save-btn" type="submit">바꾸기</button>
+  </form>
   <h3>지금 함께 보는 사람 · <span id="people-n">1</span>명</h3>
   <ul class="people" id="people"></ul>
   <p class="people-empty" id="people-note" hidden></p>
@@ -1346,7 +1377,7 @@ function drawAudience(t, avg){
   for (const f of figs) {
     if (f.kind === "amb") drawFigure(f.p, t, avg, null, null);
     else if (f.kind === "peer") drawFigure(f.p, t, avg, f.v.col, f.v.name || "관람객");
-    else drawFigure(f.p, t, avg, myColor, "나");
+    else drawFigure(f.p, t, avg, myColor, myNick ? "나 · " + myNick : "나");
   }
   drawHearts();
 }
@@ -1596,7 +1627,7 @@ function pushPresence(force){
   if (!force && now - lastPush < (room.minInterval || 90)) return;
   if (!force && Math.abs(me.x - pushedX) < .03 && Math.abs(me.z - pushedZ) < .03) return;
   lastPush = now; pushedX = me.x; pushedZ = me.z;
-  room.presence({ x: +me.x.toFixed(2), z: +me.z.toFixed(2), c: myFallbackCol, look: myStyleN, n: myNick, show: "sac-fountain" }).catch(() => {});
+  room.presence({ x: +me.x.toFixed(2), z: +me.z.toFixed(2), c: myFallbackCol, look: myStyleN, n: myNick, nc: nickChosen ? 1 : 0, show: "sac-fountain" }).catch(() => {});
 }
 function syncPeers(list){
   const seen = new Set();
@@ -1609,7 +1640,7 @@ function syncPeers(list){
     if (!v) { v = { peer: p.peer, dx: cx, dz: cz, tx: cx, tz: cz, name: "", avatar: "", col: validHex(pr.c) || hashCol(p.peer), moving: false, lastWish: 0, lastCheer: 0 }; peerMap.set(p.peer, v); }
     v.tx = cx; v.tz = cz; v.by = p.by; v.isMe = p.isMe; v.guest = p.guest;
     if (!v.resolved) v.col = validHex(pr.c) || v.col;
-    if (!v.by && typeof pr.n === "string") v.name = cleanNick(pr.n);
+    { const nn = typeof pr.n === "string" ? cleanNick(pr.n) : ""; if (nn && pr.nc) { v.name = nn; v.nickSet = true; } else if (!v.by && nn) v.name = nn; }
     const lk = Number(pr.look); const lkN = Number.isInteger(lk) && lk > 0 && lk < 1e7 ? lk : (Math.abs([...String(p.peer)].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 7)) % 100000) + 1;
     if (!v.st || v.st.n !== lkN) { v.st = mkStyle(lkN); v.st.top = null; }
     seen.add(p.peer);
@@ -1628,7 +1659,7 @@ async function resolveNames(){
       const ps = await userCap.profiles(ids);
       for (const v of peerMap.values()) {
         const pf = v.by && ps[v.by];
-        if (pf) { v.name = pf.name || ""; v.avatar = pf.avatarUrl || ""; if (pf.color) { v.col = pf.color; v.resolved = true; } }
+        if (pf) { if (!v.nickSet) v.name = pf.name || ""; v.avatar = pf.avatarUrl || ""; if (pf.color) { v.col = pf.color; v.resolved = true; } }
       }
     } catch (e) {}
   }
@@ -1639,7 +1670,7 @@ function setCount(n){ liveN = n; $("#live-count").textContent = n; $("#people-n"
 function renderPeople(){
   const ul = $("#people"), note = $("#people-note");
   ul.innerHTML = "";
-  const rows = [{ name: roomState === "public" ? "나 · " + myNick : "나", col: myColor, avatar: myAvatar, tag: "YOU" }]
+  const rows = [{ name: "나 · " + myNick, col: myColor, avatar: myAvatar, tag: "YOU" }]
     .concat([...peerMap.values()].map(v => ({ name: v.name || "관람객", col: v.col, avatar: v.avatar, tag: v.guest ? "GUEST" : "" })));
   for (const r of rows) {
     const li = document.createElement("li"); li.style.setProperty("--pc", r.col);
@@ -1742,6 +1773,30 @@ async function makePublicRoom(){
     connected: () => connected
   };
 }
+let nickChosen = false;
+try { nickChosen = localStorage.getItem("sac-fountain-nick-set") === "1"; } catch (e) {}
+function randomNick(){ return NICK_A[Math.floor(Math.random() * NICK_A.length)] + NICK_B[Math.floor(Math.random() * NICK_B.length)]; }
+function setNick(raw, chosen){
+  const n = cleanNick(raw);
+  if (!n) { toast("이름을 한 글자 이상 적어 주세요"); return false; }
+  myNick = n; nickChosen = !!chosen;
+  try { localStorage.setItem("sac-fountain-nick", n); localStorage.setItem("sac-fountain-nick-set", nickChosen ? "1" : "0"); } catch (e) {}
+  const a = document.getElementById("nick-intro"), b = document.getElementById("nick-sheet");
+  if (a && a !== document.activeElement) a.value = n; if (b && b !== document.activeElement) b.value = n;
+  if (room) pushPresence(true);
+  renderPeople();
+  return true;
+}
+(() => {
+  const a = document.getElementById("nick-intro"), b = document.getElementById("nick-sheet");
+  a.value = myNick; b.value = myNick;
+  document.getElementById("nick-dice").addEventListener("click", () => { a.value = randomNick(); a.focus(); });
+  a.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); document.getElementById("btn-enter").click(); } });
+  document.getElementById("nick-form").addEventListener("submit", e => {
+    e.preventDefault();
+    if (setNick(b.value, true)) { b.blur(); toast("이름을 " + myNick + "(으)로 바꿨어요"); }
+  });
+})();
 let relayStatus = "";
 function setRelayStatus(s){ relayStatus = s; renderPeople(); }
 (async () => {
@@ -1951,6 +2006,7 @@ $("#btn-shot").addEventListener("click", () => {
 $("#btn-enter").addEventListener("click", () => {
   const intro = $("#intro"); intro.classList.add("leaving");
   setTimeout(() => { intro.hidden = true; }, 300);
+  { const a = document.getElementById("nick-intro"); const v = cleanNick(a.value); if (v && v !== myNick) setNick(v, true); else if (v) setNick(v, nickChosen || v !== ""); }
   unlockAudio();
   joinLive();
   checkAudioSoon();
