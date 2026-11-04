@@ -233,7 +233,10 @@ button{font:inherit;color:inherit;cursor:pointer}
   .brand .kicker{display:none}
   .brand .name{font-size:18px;line-height:1.15}
   .brand .name em{display:block;white-space:nowrap}
-  .live .lbl{display:none}
+  .live .lbl,.live .sep,.live .live-word{display:none}
+  .tools{gap:4px}
+  .icon-btn{width:32px;height:32px}
+  .live{height:32px;padding:0 10px;gap:6px}
   .now{padding:12px 12px 12px 16px;gap:12px}
   .track-title{font-size:20px}
   .t-btn.skip{display:none}
@@ -252,7 +255,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
   <div class="tools">
     <button class="live" id="btn-live" type="button" aria-label="함께 보는 사람과 선곡표 열기">
-      <span class="dot" aria-hidden="true"></span><span>LIVE</span><span class="sep" aria-hidden="true"></span>
+      <span class="dot" aria-hidden="true"></span><span class="live-word">LIVE</span><span class="sep" aria-hidden="true"></span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2c2.8.3 5 2.6 5 5.8"/></svg>
       <span class="lbl">함께</span><span class="count" id="live-count">1</span>
     </button>
@@ -340,7 +343,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   <h3>지금 함께 보는 사람 · <span id="people-n">1</span>명</h3>
   <ul class="people" id="people"></ul>
   <p class="people-empty" id="people-note" hidden></p>
-  <p class="note">상단 숫자와 이 목록은 지금 이 페이지를 연 실제 접속자예요. 이름 없이 서 있는 어두운 실루엣만 분위기를 위한 연출입니다.</p>
+  <p class="note">상단 숫자와 이 목록은 지금 이 페이지를 연 실제 접속자예요. 이름표 없이 산책하는 관람객만 분위기를 위한 연출입니다.</p>
 </div>
 
 <div class="sheet" id="sheet-about" role="dialog" aria-modal="true" aria-labelledby="h-about" hidden>
@@ -1590,10 +1593,10 @@ let myAvatar = "", lastPush = 0, pushedX = NaN, pushedZ = NaN;
 function pushPresence(force){
   if (!room) return;
   const now = performance.now();
-  if (!force && now - lastPush < 90) return;
+  if (!force && now - lastPush < (room.minInterval || 90)) return;
   if (!force && Math.abs(me.x - pushedX) < .03 && Math.abs(me.z - pushedZ) < .03) return;
   lastPush = now; pushedX = me.x; pushedZ = me.z;
-  room.presence({ x: +me.x.toFixed(2), z: +me.z.toFixed(2), c: myFallbackCol, look: myStyleN, show: "sac-fountain" }).catch(() => {});
+  room.presence({ x: +me.x.toFixed(2), z: +me.z.toFixed(2), c: myFallbackCol, look: myStyleN, n: myNick, show: "sac-fountain" }).catch(() => {});
 }
 function syncPeers(list){
   const seen = new Set();
@@ -1606,6 +1609,7 @@ function syncPeers(list){
     if (!v) { v = { peer: p.peer, dx: cx, dz: cz, tx: cx, tz: cz, name: "", avatar: "", col: validHex(pr.c) || hashCol(p.peer), moving: false, lastWish: 0, lastCheer: 0 }; peerMap.set(p.peer, v); }
     v.tx = cx; v.tz = cz; v.by = p.by; v.isMe = p.isMe; v.guest = p.guest;
     if (!v.resolved) v.col = validHex(pr.c) || v.col;
+    if (!v.by && typeof pr.n === "string") v.name = cleanNick(pr.n);
     const lk = Number(pr.look); const lkN = Number.isInteger(lk) && lk > 0 && lk < 1e7 ? lk : (Math.abs([...String(p.peer)].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 7)) % 100000) + 1;
     if (!v.st || v.st.n !== lkN) { v.st = mkStyle(lkN); v.st.top = null; }
     seen.add(p.peer);
@@ -1635,7 +1639,7 @@ function setCount(n){ liveN = n; $("#live-count").textContent = n; $("#people-n"
 function renderPeople(){
   const ul = $("#people"), note = $("#people-note");
   ul.innerHTML = "";
-  const rows = [{ name: "나", col: myColor, avatar: myAvatar, tag: "YOU" }]
+  const rows = [{ name: roomState === "public" ? "나 · " + myNick : "나", col: myColor, avatar: myAvatar, tag: "YOU" }]
     .concat([...peerMap.values()].map(v => ({ name: v.name || "관람객", col: v.col, avatar: v.avatar, tag: v.guest ? "GUEST" : "" })));
   for (const r of rows) {
     const li = document.createElement("li"); li.style.setProperty("--pc", r.col);
@@ -1644,8 +1648,11 @@ function renderPeople(){
     const tg = document.createElement("span"); tg.className = "pt"; tg.textContent = r.tag;
     li.append(img, nm, tg); ul.appendChild(li);
   }
-  note.hidden = roomState !== "solo";
-  note.textContent = "이 화면에서는 다른 관람객과 연결되지 않았어요. 공유받은 사람이 로그인한 상태로 열면 함께 보여요.";
+  note.hidden = roomState !== "solo" && roomState !== "public";
+  if (roomState === "public") note.textContent = relayStatus === "live"
+    ? "같은 주소로 들어온 사람이 실시간으로 보여요. 위치·색·별명만 공개 중계 서버를 거쳐 전달되고, 이름이나 계정 정보는 보내지 않아요."
+    : (relayStatus === "reconnecting" ? "중계 서버에 다시 연결하는 중이에요. 잠시 후 다른 관람객이 다시 보여요." : "중계 서버에 연결하는 중이에요.");
+  else note.textContent = "이 화면에서는 다른 관람객과 연결되지 않았어요. 공유받은 사람이 로그인한 상태로 열면 함께 보여요.";
 }
 function dotAvatar(col){ const c = document.createElement("canvas"); c.width = c.height = 56; const x = c.getContext("2d"); x.fillStyle = col; x.beginPath(); x.arc(28, 28, 28, 0, 6.283); x.fill(); x.fillStyle = "rgba(7,6,12,.55)"; x.beginPath(); x.arc(28, 22, 9, 0, 6.283); x.fill(); x.beginPath(); x.arc(28, 50, 17, Math.PI, 0); x.fill(); return c.toDataURL(); }
 function onRemoteWish(m){
@@ -1664,8 +1671,91 @@ function onRemoteCheer(m){
   if (!v || now - v.lastCheer < 400) return;
   v.lastCheer = now; addHearts(v.dx, v.dz, v.col);
 }
+/* ---------- Public relay (used on the open web address, e.g. GitHub Pages) ----------
+   The claude.ai room only exists inside claude.ai. On the public address, visitors meet through
+   a free public MQTT broker over WebSocket. Only plaza coordinates, a colour, a look number and a
+   random nickname travel; no account, name or e-mail is sent. */
+const RELAY_URL = (() => { try { const q = new URLSearchParams(location.search).get("relay"); if (q && /^wss?:\/\//.test(q)) return q; } catch (e) {} return "wss://broker.emqx.io:8084/mqtt"; })();
+const RELAY_BASE = "sac-fountain/v1/plaza/";
+const NICK_A = ["노을빛", "반짝", "물방울", "달빛", "산들", "몽글", "보라", "분홍", "초록", "새벽"];
+const NICK_B = ["토끼", "고양이", "곰", "펭귄", "여우", "다람쥐", "강아지", "오리", "판다", "고래"];
+let myNick = "";
+try { myNick = localStorage.getItem("sac-fountain-nick") || ""; } catch (e) {}
+if (!myNick) { myNick = NICK_A[Math.floor(Math.random() * NICK_A.length)] + NICK_B[Math.floor(Math.random() * NICK_B.length)]; try { localStorage.setItem("sac-fountain-nick", myNick); } catch (e) {} }
+const cleanNick = s => typeof s === "string" ? s.replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁯]/g, "").trim().slice(0, 12) : "";
+function loadScript(src){
+  return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.async = true; s.onload = () => res(); s.onerror = () => rej(new Error("load " + src)); document.head.appendChild(s); });
+}
+async function makePublicRoom(){
+  if (!window.mqtt) {
+    try { await loadScript("https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"); }
+    catch (e) { await loadScript("https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"); }
+  }
+  const tab = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  const others = new Map();            // id -> { presence, last }
+  const peerFns = [], evFns = {};
+  let mine = {}, notifyQueued = false, connected = false;
+  const pTopic = RELAY_BASE + "p/" + tab;
+  const client = window.mqtt.connect(RELAY_URL, {
+    clientId: "sacf_" + tab, clean: true, keepalive: 30, reconnectPeriod: 4000, connectTimeout: 9000,
+    will: { topic: pTopic, payload: "", qos: 0, retain: false }
+  });
+  const selfPeer = () => ({ peer: tab, by: null, isMe: true, sameTab: true, kind: "viewer", guest: false, presence: mine });
+  const list = () => [selfPeer()].concat([...others].map(([id, o]) => ({ peer: id, by: null, isMe: false, sameTab: false, kind: "viewer", guest: false, presence: o.presence })));
+  const notify = () => { if (notifyQueued) return; notifyQueued = true; requestAnimationFrame(() => { notifyQueued = false; const l = list(); for (const f of peerFns) { try { f({ peers: l }); } catch (e) {} } }); };
+  const publishMine = () => { if (connected) client.publish(pTopic, JSON.stringify(mine), { qos: 0 }); };
+  client.on("connect", () => { connected = true; client.subscribe(RELAY_BASE + "#", { qos: 0 }); publishMine(); setRelayStatus("live"); });
+  client.on("close", () => { connected = false; });
+  client.on("offline", () => { connected = false; setRelayStatus("reconnecting"); });
+  client.on("error", () => {});
+  client.on("message", (topic, buf) => {
+    if (!topic.startsWith(RELAY_BASE) || buf.length > 600) return;
+    const rest = topic.slice(RELAY_BASE.length);
+    if (rest.startsWith("p/")) {
+      const id = rest.slice(2);
+      if (!/^[a-z0-9]{6,24}$/.test(id) || id === tab) return;
+      if (!buf.length) { if (others.delete(id)) notify(); return; }
+      let d; try { d = JSON.parse(buf.toString()); } catch (e) { return; }
+      if (!d || typeof d !== "object") return;
+      const x = Number(d.x), z = Number(d.z); if (!isFinite(x) || !isFinite(z)) return;
+      if (!others.has(id) && others.size >= 60) return;   // keep the plaza readable
+      others.set(id, { presence: { x, z, c: d.c, look: d.look, n: cleanNick(d.n) }, last: Date.now() }); notify();
+      // someone new arrived: say hello so they see us straight away
+      if (Date.now() - (makePublicRoom.lastHello || 0) > 1500) { makePublicRoom.lastHello = Date.now(); publishMine(); }
+    } else if (rest.startsWith("e/")) {
+      const t = rest.slice(2); if (!evFns[t]) return;
+      let d; try { d = JSON.parse(buf.toString()); } catch (e) { return; }
+      if (!d || d.from === tab || typeof d.from !== "string") return;
+      for (const f of evFns[t]) { try { f({ peer: d.from, by: null, isMe: false, sameTab: false, kind: "viewer", guest: false, topic: t, data: d.d }); } catch (e) {} }
+    }
+  });
+  // heartbeat so late joiners see everyone; drop people who went quiet
+  setInterval(publishMine, 3000);
+  setInterval(() => { const now = Date.now(); let ch = false; for (const [id, o] of others) if (now - o.last > 9000) { others.delete(id); ch = true; } if (ch) notify(); }, 2000);
+  addEventListener("pagehide", () => { try { client.publish(pTopic, "", { qos: 0 }); client.end(true); } catch (e) {} });
+  return {
+    minInterval: 160,
+    presence(patch){ for (const k in patch) { if (patch[k] === null) delete mine[k]; else mine[k] = patch[k]; } publishMine(); return Promise.resolve(); },
+    emit(topic, data){ if (connected) client.publish(RELAY_BASE + "e/" + topic, JSON.stringify({ from: tab, d: data }), { qos: 0 }); return Promise.resolve(); },
+    on(topic, fn){ (evFns[topic] = evFns[topic] || []).push(fn); return () => {}; },
+    onPeers(fn){ peerFns.push(fn); notify(); return () => {}; },
+    connected: () => connected
+  };
+}
+let relayStatus = "";
+function setRelayStatus(s){ relayStatus = s; renderPeople(); }
 (async () => {
-  if (!window.claude || typeof window.claude.use !== "function") { roomState = "solo"; renderPeople(); return; }
+  if (!window.claude || typeof window.claude.use !== "function") {
+    // open web address: meet other visitors through the public relay
+    if (location.protocol === "file:") { roomState = "solo"; renderPeople(); return; }
+    try {
+      room = await makePublicRoom(); roomState = "public";
+      room.onPeers(ch => syncPeers(ch.peers));
+      room.on("wish", onRemoteWish); room.on("cheer", onRemoteCheer);
+      pushPresence(true); renderPeople();
+    } catch (e) { room = null; roomState = "solo"; renderPeople(); }
+    return;
+  }
   try { userCap = await window.claude.use("user"); } catch (e) { userCap = null; }
   if (userCap) {
     try { const mi = await userCap.me(); if (mi.color) myColor = mi.color; if (mi.avatarUrl) myAvatar = mi.avatarUrl; } catch (e) {}
